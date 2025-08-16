@@ -36,7 +36,6 @@ const moment = require('moment-timezone');
 const FileType = require('file-type');
 const { Boom } = require('@hapi/boom');
 const PhoneNumber = require('awesome-phonenumber');
-const { File } = require('megajs'); // ⬅ MEGA SDK
 const { color } = require('./start/lib/color');
 
 const {
