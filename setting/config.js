@@ -5,7 +5,6 @@
   https://wa.me/256742932677
 
 */
-
 // setting/config.js
 const fs = require('fs')
 
