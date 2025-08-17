@@ -10,7 +10,7 @@ const jimp = require("jimp")
 const os = require('os')
 const path = require('path')
 const { handleMediaUpload } = require('./lib/catbox')
-const { getDevice } = require('@whiskeysockets/baileys')
+const { getDevice, useSingleFileAuthState } = require('@whiskeysockets/baileys')
 const fsp = fs.promises;
 const lolcatjs = require('lolcatjs')
 const util = require("util")
@@ -18,6 +18,34 @@ const moment = require("moment-timezone")
 const yts = require('yt-search')
 const { spawn, exec, execSync } = require('child_process')
 const { default: baileys, proto, jidNormalizedUser, generateWAMessage, generateWAMessageFromContent, getContentType, prepareWAMessageMedia } = require("@whiskeysockets/baileys")
+
+// ================= SHORT SESSION ID SETUP (NO BASE64) ================= //
+const SESSION_ID = process.env.SESSION_ID || "TREND-XMD~"
+
+let creds
+try {
+    const rawData = SESSION_ID.replace("TREND-XMD~", "")
+    creds = JSON.parse(rawData)   // directly parse JSON string
+    console.log(chalk.green("✅ Short raw Session ID loaded successfully"))
+} catch (e) {
+    console.log(chalk.red("❌ Invalid SESSION_ID. Please generate a new one."))
+    creds = {}
+}
+
+const authState = {
+    creds,
+    keys: {
+        get: async () => ({}),
+        set: async () => {}
+    }
+}
+
+const saveState = async () => {
+    // here you could update SESSION_ID if you want auto-save later
+    console.log(chalk.yellow("⚡ Using Short Raw Session ID (TREND-XMD)"))
+}
+// ====================================================================== //
+
 module.exports = conn = async (conn, m, chatUpdate, mek, store) => {
 try {
 const body = (m.mtype === "conversation" ? m.message.conversation : m.mtype === "imageMessage" ? m.message.imageMessage.caption : m.mtype === "videoMessage" ? m.message.videoMessage.caption : m.mtype === "extendedTextMessage" ? m.message.extendedTextMessage.text : m.mtype === "buttonsResponseMessage" ? m.message.buttonsResponseMessage.selectedButtonId : m.mtype === "listResponseMessage" ? m.message.listResponseMessage.singleSelectReply.selectedRowId : m.mtype === "templateButtonReplyMessage" ? m.message.templateButtonReplyMessage.selectedId : m.mtype === "interactiveResponseMessage" ? JSON.parse(m.msg.nativeFlowResponseMessage.paramsJson).id : m.mtype === "templateButtonReplyMessage" ? m.msg.selectedId : m.mtype === "messageContextInfo" ? m.message.buttonsResponseMessage?.selectedButtonId || m.message.listResponseMessage?.singleSelectReply.selectedRowId || m.text : "")
