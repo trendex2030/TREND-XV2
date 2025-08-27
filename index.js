@@ -68,8 +68,9 @@ logger.level = "trace";
 
 const msgRetryCounterCache = new NodeCache();
 
-const __filename = new URL(import.meta.url).pathname;
-const __dirname = path.dirname(__filename);
+const path = require('path');
+const __filename = __filename; // Already provided by Node in CommonJS
+const __dirname = __dirname;   // Already provided by Node in CommonJS
 
 const sessionDir = path.join(__dirname, 'session');
 const credsPath = path.join(sessionDir, 'creds.json');
