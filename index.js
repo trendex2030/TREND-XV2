@@ -32,6 +32,18 @@ const { smsg } = require('./start/lib/myfunction'); // keep your helper
 const SESSION_FILE = path.join(__dirname, 'session.json');
 const db = new JSONFileSync(SESSION_FILE);
 
+function reviveBuffers(obj) {
+    if (obj && typeof obj === "object") {
+        for (const k in obj) {
+            if (obj[k] && obj[k].type === "Buffer" && Array.isArray(obj[k].data)) {
+                obj[k] = Buffer.from(obj[k].data); // restore Buffer
+            } else if (typeof obj[k] === "object") {
+                reviveBuffers(obj[k]); // recurse deeply
+            }
+        }
+    }
+}
+
 function loadSession() {
     const encoded = process.env.SESSION_ID;
     console.log("✅ Decoding SESSION_ID from env");
@@ -46,21 +58,25 @@ function loadSession() {
         const json = Buffer.from(base64, "base64").toString("utf-8");
         let credsData = JSON.parse(json);
 
-        // 🔧 If user provided creds-only, wrap it
+        // restore Buffers
+        reviveBuffers(credsData);
+
+        // if user provided creds-only, wrap it
         if (credsData.noiseKey || credsData.signedIdentityKey || credsData.me) {
             console.log("⚠️ Detected creds-only session, wrapping into { creds, keys } format.");
             credsData = { creds: credsData, keys: {} };
         }
 
         if (!credsData.creds) throw new Error("missing creds");
-        if (!credsData.keys) credsData.keys = {}; // ensure keys exists
+        if (!credsData.keys) credsData.keys = {};
 
+        console.log("✅ SESSION restored with buffers");
         return credsData;
     } catch (err) {
         console.error("❌ Failed to decode SESSION_ID:", err.message);
         return null;
     }
-}
+                      }
 
 //* ---------- Prepare auth state ---------- */
 let jsonSession = loadSession();
