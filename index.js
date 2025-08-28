@@ -31,8 +31,10 @@ const { smsg } = require('./start/lib/myfunction'); // keep your helper
 /* ---------- Config & session ---------- */
 const SESSION_FILE = path.join(__dirname, 'session.json');
 const db = new JSONFileSync(SESSION_FILE);
-
-function reviveBuffers(obj) {
+// ==========================
+// 🔧 Deep Buffer Reviver
+// ==========================
+function reviveBuffersDeep(obj) {
   if (!obj || typeof obj !== "object") return obj;
 
   if (obj.type === "Buffer" && Array.isArray(obj.data)) {
@@ -40,11 +42,14 @@ function reviveBuffers(obj) {
   }
 
   for (const k in obj) {
-    obj[k] = reviveBuffers(obj[k]);
+    obj[k] = reviveBuffersDeep(obj[k]);
   }
   return obj;
 }
 
+// ==========================
+// 🔧 Load Session from ENV
+// ==========================
 function loadSession() {
   const encoded = process.env.SESSION_ID || "";
   if (!encoded.startsWith("TREND-XMD~")) return null;
@@ -54,12 +59,12 @@ function loadSession() {
     const json = Buffer.from(base64, "base64").toString("utf-8");
     let credsData = JSON.parse(json);
 
-    // revive all Buffers deeply
-    credsData = reviveBuffers(credsData);
+    // revive all nested Buffers
+    credsData = reviveBuffersDeep(credsData);
 
-    // wrap if creds-only
-    if (credsData.noiseKey || credsData.signedIdentityKey || credsData.me) {
-      console.log("⚠️ Detected creds-only session, wrapping into { creds, keys } format.");
+    // wrap creds if missing outer { creds, keys }
+    if (!credsData.creds && (credsData.noiseKey || credsData.signedIdentityKey || credsData.me)) {
+      console.log("⚠️ Wrapping creds-only session into { creds, keys } format.");
       credsData = { creds: credsData, keys: {} };
     }
 
@@ -74,38 +79,22 @@ function loadSession() {
   }
 }
 
-//* ---------- Prepare auth state ---------- */
-let jsonSession = loadSession();
+// ==========================
+// 🔧 Save Session Backup
+// ==========================
+function saveSessionBackup(credsData) {
+  try {
+    // stringify and base64 encode
+    const json = JSON.stringify(credsData, null, 2);
+    const base64 = Buffer.from(json, "utf-8").toString("base64");
+    const wrapped = `TREND-XMD~${base64}`;
 
-if (!jsonSession) {
-  console.error("🚨 No valid SESSION_ID found. Please generate and set it with:");
-  console.error("   heroku config:set SESSION_ID=\"TREND-XMD~xxxx\"");
-  process.exit(1); // stop gracefully instead of crashing
-}
-
-const authState = {
-  creds: jsonSession.creds,
-  keys: {
-    get: async (type, ids) => {
-      const result = {};
-      if (!jsonSession.keys) return result;
-      const bucket = jsonSession.keys[type] || {};
-      for (const id of ids) if (bucket[id]) result[id] = bucket[id];
-      return result;
-    },
-    set: async (data) => {
-      jsonSession.keys = jsonSession.keys || {};
-      for (const type in data) {
-        jsonSession.keys[type] = jsonSession.keys[type] || {};
-        Object.assign(jsonSession.keys[type], data[type]);
-      }
-      db.write(jsonSession);
-    }
+    // write to session.json for backup
+    fs.writeFileSync("./session.json", wrapped);
+    console.log("💾 Session backup saved.");
+  } catch (err) {
+    console.error("❌ Failed to save session backup:", err.message);
   }
-};
-
-function saveSessionBackup() {
-  db.write(jsonSession);
 }
 
 /* ---------- Express server (Heroku) ---------- */
