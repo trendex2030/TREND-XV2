@@ -33,54 +33,46 @@ const SESSION_FILE = path.join(__dirname, 'session.json');
 const db = new JSONFileSync(SESSION_FILE);
 
 function reviveBuffers(obj) {
-    if (!obj || typeof obj !== "object") return;
+  if (!obj || typeof obj !== "object") return obj;
 
-    if (obj.type === "Buffer" && Array.isArray(obj.data)) {
-        return Buffer.from(obj.data); // convert to Buffer
-    }
+  if (obj.type === "Buffer" && Array.isArray(obj.data)) {
+    return Buffer.from(obj.data);
+  }
 
-    for (const k in obj) {
-        obj[k] = reviveBuffers(obj[k]); // recurse & replace
-    }
-    return obj;
-}
-let credsData = JSON.parse(json);
-
-// restore Buffers deeply
-credsData = reviveBuffers(credsData);
-
-// if creds-only, wrap it
-if (credsData.noiseKey || credsData.signedIdentityKey || credsData.me) {
-    console.log("⚠️ Detected creds-only session, wrapping into { creds, keys } format.");
-    credsData = { creds: credsData, keys: {} };
+  for (const k in obj) {
+    obj[k] = reviveBuffers(obj[k]);
+  }
+  return obj;
 }
 
-if (!credsData.creds) throw new Error("missing creds");
-if (!credsData.keys) credsData.keys = {};
-    try {
-        const base64 = encoded.replace("TREND-XMD~", "");
-        const json = Buffer.from(base64, "base64").toString("utf-8");
-        let credsData = JSON.parse(json);
+function loadSession() {
+  const encoded = process.env.SESSION_ID || "";
+  if (!encoded.startsWith("TREND-XMD~")) return null;
 
-        // restore Buffers
-        reviveBuffers(credsData);
+  try {
+    const base64 = encoded.replace("TREND-XMD~", "");
+    const json = Buffer.from(base64, "base64").toString("utf-8");
+    let credsData = JSON.parse(json);
 
-        // if user provided creds-only, wrap it
-        if (credsData.noiseKey || credsData.signedIdentityKey || credsData.me) {
-            console.log("⚠️ Detected creds-only session, wrapping into { creds, keys } format.");
-            credsData = { creds: credsData, keys: {} };
-        }
+    // revive all Buffers deeply
+    credsData = reviveBuffers(credsData);
 
-        if (!credsData.creds) throw new Error("missing creds");
-        if (!credsData.keys) credsData.keys = {};
-
-        console.log("✅ SESSION restored with buffers");
-        return credsData;
-    } catch (err) {
-        console.error("❌ Failed to decode SESSION_ID:", err.message);
-        return null;
+    // wrap if creds-only
+    if (credsData.noiseKey || credsData.signedIdentityKey || credsData.me) {
+      console.log("⚠️ Detected creds-only session, wrapping into { creds, keys } format.");
+      credsData = { creds: credsData, keys: {} };
     }
-                      }
+
+    if (!credsData.creds) throw new Error("missing creds");
+    if (!credsData.keys) credsData.keys = {};
+
+    console.log("✅ SESSION restored with buffers");
+    return credsData;
+  } catch (err) {
+    console.error("❌ Failed to decode SESSION_ID:", err.message);
+    return null;
+  }
+}
 
 //* ---------- Prepare auth state ---------- */
 let jsonSession = loadSession();
