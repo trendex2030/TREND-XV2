@@ -1,3 +1,5 @@
+console.clear();
+console.log('starting...');
 require('./setting/config');
 process.on("uncaughtException", console.error); 
 
@@ -6,16 +8,7 @@ const {
   default: makeWASocket,
   DisconnectReason,
   fetchLatestBaileysVersion,
-  generateForwardMessageContent,
-  prepareWAMessageMedia,
-  generateWAMessageFromContent,
-  generateMessageID,
-  downloadContentFromMessage,
-  getContentType,
-  jidDecode,
-  proto,
-  delay,
-  BufferJSON
+  proto
 } = require('@whiskeysockets/baileys');
 
 const pino = require('pino');
@@ -31,6 +24,7 @@ const { smsg } = require('./start/lib/myfunction'); // keep your helper
 /* ---------- Config & session ---------- */
 const SESSION_FILE = path.join(__dirname, 'session.json');
 const db = new JSONFileSync(SESSION_FILE);
+
 // ==========================
 // 🔧 Deep Buffer Reviver
 // ==========================
@@ -114,6 +108,13 @@ const msgRetryCounterCache = new NodeCache();
 let store = { contacts: {} };
 let conn = null;
 
+/* ---------- Load and prepare authState ---------- */
+let authState = loadSession();
+if (!authState) {
+  console.error("❌ No valid SESSION_ID provided in env. Exiting.");
+  process.exit(1);
+}
+
 /* ---------- Start client ---------- */
 async function clientstart() {
   try {
@@ -123,14 +124,13 @@ async function clientstart() {
       logger,
       printQRInTerminal: false,
       auth: authState,
-      getMessage: async (key) => null,
+      getMessage: async () => null,
       msgRetryCounterCache
     });
 
     conn.ev.on('creds.update', () => {
       authState.creds = conn.auth?.creds || authState.creds;
-      jsonSession.creds = authState.creds;
-      saveSessionBackup();
+      saveSessionBackup(authState);
       console.log('💾 Session updated and saved');
     });
 
@@ -138,7 +138,9 @@ async function clientstart() {
       try {
         let mek = chatUpdate.messages && chatUpdate.messages[0];
         if (!mek || !mek.message) return;
-        mek.message = Object.keys(mek.message)[0] === 'ephemeralMessage' ? mek.message.ephemeralMessage.message : mek.message;
+        mek.message = Object.keys(mek.message)[0] === 'ephemeralMessage'
+          ? mek.message.ephemeralMessage.message
+          : mek.message;
         let m = smsg(conn, mek, store);
         require('./start/system')(conn, m, chatUpdate, mek, store);
       } catch (err) {
