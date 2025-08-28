@@ -33,26 +33,30 @@ const SESSION_FILE = path.join(__dirname, 'session.json');
 const db = new JSONFileSync(SESSION_FILE);
 
 function reviveBuffers(obj) {
-    if (obj && typeof obj === "object") {
-        for (const k in obj) {
-            if (obj[k] && obj[k].type === "Buffer" && Array.isArray(obj[k].data)) {
-                obj[k] = Buffer.from(obj[k].data); // restore Buffer
-            } else if (typeof obj[k] === "object") {
-                reviveBuffers(obj[k]); // recurse deeply
-            }
-        }
+    if (!obj || typeof obj !== "object") return;
+
+    if (obj.type === "Buffer" && Array.isArray(obj.data)) {
+        return Buffer.from(obj.data); // convert to Buffer
     }
+
+    for (const k in obj) {
+        obj[k] = reviveBuffers(obj[k]); // recurse & replace
+    }
+    return obj;
+}
+let credsData = JSON.parse(json);
+
+// restore Buffers deeply
+credsData = reviveBuffers(credsData);
+
+// if creds-only, wrap it
+if (credsData.noiseKey || credsData.signedIdentityKey || credsData.me) {
+    console.log("⚠️ Detected creds-only session, wrapping into { creds, keys } format.");
+    credsData = { creds: credsData, keys: {} };
 }
 
-function loadSession() {
-    const encoded = process.env.SESSION_ID;
-    console.log("✅ Decoding SESSION_ID from env");
-
-    if (!encoded || !encoded.startsWith("TREND-XMD~")) {
-        console.error("⚠️ SESSION_ID is missing or invalid. Please set it with: heroku config:set SESSION_ID=\"TREND-XMD~xxxx\"");
-        return null;
-    }
-
+if (!credsData.creds) throw new Error("missing creds");
+if (!credsData.keys) credsData.keys = {};
     try {
         const base64 = encoded.replace("TREND-XMD~", "");
         const json = Buffer.from(base64, "base64").toString("utf-8");
