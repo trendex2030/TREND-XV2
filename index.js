@@ -25,7 +25,7 @@ const chalk = require('chalk');
 const util = require('util');
 const NodeCache = require('node-cache');
 
-const { JSONFileSync } = require('./JSONFileSync.js');
+const { JSONFileSync } = require('./start/lib/lowdb/adapters/JSONFileSync.js');
 const { smsg } = require('./start/lib/myfunction'); // keep your helper
 
 /* ---------- Config & session ---------- */
