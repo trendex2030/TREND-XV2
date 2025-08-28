@@ -1,26 +1,21 @@
 const fs = require('fs');
-const path = require('path');
+
 class TextFileSync {
     constructor(filename) {
         this.filename = filename;
-        this.tempFilename = path.join(path.dirname(filename), `.${path.basename(filename)}.tmp`);
     }
+
     read() {
-        let data;
         try {
-            data = fs.readFileSync(this.filename, 'utf-8');
+            return fs.readFileSync(this.filename, 'utf-8');
+        } catch (err) {
+            return null;
         }
-        catch (e) {
-            if (e.code === 'ENOENT') {
-                return null;
-            }
-            throw e;
-        }
-        return data;
     }
-    write(str) {
-        fs.writeFileSync(this.tempFilename, str);
-        fs.renameSync(this.tempFilename, this.filename);
+
+    write(data) {
+        fs.writeFileSync(this.filename, data, 'utf-8');
     }
 }
+
 module.exports = { TextFileSync };
