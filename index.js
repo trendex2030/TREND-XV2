@@ -38,19 +38,27 @@ function loadSession() {
 
     if (!encoded || !encoded.startsWith("TREND-XMD~")) {
         console.error("⚠️ SESSION_ID is missing or invalid. Please set it with: heroku config:set SESSION_ID=\"TREND-XMD~xxxx\"");
-        return null; // don’t crash
+        return null;
     }
 
     try {
         const base64 = encoded.replace("TREND-XMD~", "");
         const json = Buffer.from(base64, "base64").toString("utf-8");
-        const creds = JSON.parse(json);
+        let credsData = JSON.parse(json);
 
-        if (!creds || !creds.creds) throw new Error("missing creds");
-        return creds;
+        // 🔧 If user provided creds-only, wrap it
+        if (credsData.noiseKey || credsData.signedIdentityKey || credsData.me) {
+            console.log("⚠️ Detected creds-only session, wrapping into { creds, keys } format.");
+            credsData = { creds: credsData, keys: {} };
+        }
+
+        if (!credsData.creds) throw new Error("missing creds");
+        if (!credsData.keys) credsData.keys = {}; // ensure keys exists
+
+        return credsData;
     } catch (err) {
         console.error("❌ Failed to decode SESSION_ID:", err.message);
-        return null; // safe fallback
+        return null;
     }
 }
 
