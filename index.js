@@ -54,8 +54,14 @@ function loadSession() {
     }
 }
 
-/* ---------- Prepare auth state ---------- */
+//* ---------- Prepare auth state ---------- */
 let jsonSession = loadSession();
+
+if (!jsonSession) {
+  console.error("🚨 No valid SESSION_ID found. Please generate and set it with:");
+  console.error("   heroku config:set SESSION_ID=\"TREND-XMD~xxxx\"");
+  process.exit(1); // stop gracefully instead of crashing
+}
 
 const authState = {
   creds: jsonSession.creds,
