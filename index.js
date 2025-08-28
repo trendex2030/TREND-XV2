@@ -33,26 +33,25 @@ const SESSION_FILE = path.join(__dirname, 'session.json');
 const db = new JSONFileSync(SESSION_FILE);
 
 function loadSession() {
-  const base64 = process.env.SESSION_ID;
-  if (fs.existsSync(SESSION_FILE)) {
-    console.log('✅ Using saved session.json');
-    return db.read();
-  }
-  if (!base64 || !base64.startsWith('TREND-XMD~')) {
-    console.error('❌ SESSION_ID missing or invalid. Must start with TREND-XMD~<base64>');
-    process.exit(1);
-  }
-  console.log('✅ Decoding SESSION_ID from env');
-  try {
-    const decoded = Buffer.from(base64.replace('TREND-XMD~', ''), 'base64').toString('utf8');
-    const json = JSON.parse(decoded, BufferJSON.reviver);
-    if (!json.creds) throw new Error('missing creds');
-    db.write(json);
-    return json;
-  } catch (e) {
-    console.error('❌ Failed to decode SESSION_ID:', e);
-    process.exit(1);
-  }
+    const encoded = process.env.SESSION_ID;
+    console.log("✅ Decoding SESSION_ID from env");
+
+    if (!encoded || !encoded.startsWith("TREND-XMD~")) {
+        console.error("⚠️ SESSION_ID is missing or invalid. Please set it with: heroku config:set SESSION_ID=\"TREND-XMD~xxxx\"");
+        return null; // don’t crash
+    }
+
+    try {
+        const base64 = encoded.replace("TREND-XMD~", "");
+        const json = Buffer.from(base64, "base64").toString("utf-8");
+        const creds = JSON.parse(json);
+
+        if (!creds || !creds.creds) throw new Error("missing creds");
+        return creds;
+    } catch (err) {
+        console.error("❌ Failed to decode SESSION_ID:", err.message);
+        return null; // safe fallback
+    }
 }
 
 /* ---------- Prepare auth state ---------- */
