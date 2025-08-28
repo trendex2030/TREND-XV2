@@ -1,56 +1,18 @@
-const fs = require('fs');
-
-// ========= Setting Owner ========= //
-global.owner = ["254734939236"];
-global.ownername = "TRENDEX";
-global.botname = "TREND-X";
-
-// ========= Setting Channel ========= //
-global.namasaluran = "TREND-X";
-global.idsaluran = "120363401765045963@newsletter";
-global.linksaluran = "";
-
-// ========= Setting Status ========= //
-global.autoviewstatus = true;
-global.welcome = true;
-global.adminevent = false;
-global.antispam = true;
-global.autoread = false;
-global.anticall = true;
-global.antibug = true;
-global.autobio = true;
-global.autoTyping = false;
-global.autorecording = false;
-global.prefa = ['', '!', '.', ',', '🐤', '🦦'];
-
-// ========= Add modeStatus and versions ========= //
-global.modeStatus = "Public"; 
-global.versions = "1.0.0";
-
-// ========= Setting WM ========= //
-global.packname = 'trend-x';
-global.author = 'trendex';
-
-global.gcount = {
-    prem: 500,
-    user: 15
+module.exports = {
+  SESSION_ID: "TREND-XMD~eyJub2lzZUtleSI6eyJwcml2YXRlIjp7InR5cGUiOiJCdWZmZXIiLCJkYXRhIjoiMEdoSnBNOGdZQUdNc3ZYdGUzNlNZRkpUSTRXcGVTVGt6amlQUHROeCtWOD0ifSwicHVibGljIjp7InR5cGUiOiJCdWZmZXIiLCJkYXRhIjoiNjNRWGZYNk00SU1CQm1KR3lWV1BPeGtVaXBBdjJMeU1YNnQ3cDljU055az0ifX0sInBhaXJpbmdFcGhlbWVyYWxLZXlQYWlyIjp7InByaXZhdGUiOnsidHlwZSI6IkJ1ZmZlciIsImRhdGEiOiJJSDVaelZKSmpUT0pEOWRzOENKbHQ0c3FsV1gwSm5JcDVtTUcrdFVpSlh3PSJ9LCJwdWJsaWMiOnsidHlwZSI6IkJ1ZmZlciIsImRhdGEiOiJ6SEpuZlZtVVNTUkhYR0JDRlZPYVJDd0IxVUVCdDBNdHIxSWVkdVEzWVhvPSJ9fSwic2lnbmVkSWRlbnRpdHlLZXkiOnsicHJpdmF0ZSI6eyJ0eXBlIjoiQnVmZmVyIiwiZGF0YSI6IjhBQmY1b3ZwTHAvb2xEK0pkNkNSS0YzTnI2L2NhZmwzZlByUXZscWdBMW89In0sInB1YmxpYyI6eyJ0eXBlIjoiQnVmZmVyIiwiZGF0YSI6InRqTzlOM1pBM0l6c0JINE1FYnJ4UnFFS21LQkVnVVhpUFhGVWZ5Q01KeDg9In19LCJzaWduZWRQcmVLZXkiOnsia2V5UGFpciI6eyJwcml2YXRlIjp7InR5cGUiOiJCdWZmZXIiLCJkYXRhIjoiWUMreGU1eUFjTFVUREMxZWZ1SngxOWlHa0NwdStnREd3LzJhYnZ6VFAwcz0ifSwicHVibGljIjp7InR5cGUiOiJCdWZmZXIiLCJkYXRhIjoiT09kL0VHbWZVa1ZiOVdjOG9iMDRYNmJqemIyek9xSUZXU1dJTXlCcCtqZz0ifX0sInNpZ25hdHVyZSI6eyJ0eXBlIjoiQnVmZmVyIiwiZGF0YSI6IlpYQ2dkbFNvekUyRm9ubGl1ZnpkTm55RVBkNU5uVHlXb1ovNkVGTE9OUGpkMGg1VGxnMHdpTlUxZC9EOGttRm5odFVQcS9BWVlDbTMrMG9ib0xFcGlnPT0ifSwia2V5SWQiOjF9LCJyZWdpc3RyYXRpb25JZCI6MTgzLCJhZHZTZWNyZXRLZXkiOiJ0NHQ4Vy9zM0FWa2JBQmZySjBKU0s3b3QxNFBvYlNQWldQY0c5Q1NjYXRrPSIsInByb2Nlc3NlZEhpc3RvcnlNZXNzYWdlcyI6W10sIm5leHRQcmVLZXlJZCI6MzEsImZpcnN0VW51cGxvYWRlZFByZUtleUlkIjozMSwiYWNjb3VudFN5bmNDb3VudGVyIjowLCJhY2NvdW50U2V0dGluZ3MiOnsidW5hcmNoaXZlQ2hhdHMiOmZhbHNlfSwicmVnaXN0ZXJlZCI6dHJ1ZSwicGFpcmluZ0NvZGUiOiJORkwyWUpQWiIsIm1lIjp7ImlkIjoiMjU0NzM0OTM5MjM2OjI4QHMud2hhdHNhcHAubmV0IiwibGlkIjoiMTc2OTgzMzg4NDcxMzg0OjI4QGxpZCJ9LCJhY2NvdW50Ijp7ImRldGFpbHMiOiJDS1NBbnJNREVLV013TVVHR0FRZ0FDZ0EiLCJhY2NvdW50U2lnbmF0dXJlS2V5IjoieGx5R3RUSUZHMWwrb3dBdzBTSUlnU2g4TkVNU3g3T2pvTDBibVB0VS96OD0iLCJhY2NvdW50U2lnbmF0dXJlIjoiaDBVM1hSbXkvVFp0MEI0Mlg0RmpqdXV4TzZNYXFwQkF0WnAvTkxoRlVoVnJabjFJTFl3MWlNS0VjRFNXVENRVEFvaWU0ZlYreFI0UCtCaFVTbi84QlE9PSIsImRldmljZVNpZ25hdHVyZSI6InBMYW9DcWhLaUNXNlNGZDV6QmRqTXZVbERaNVVaN3hnZmhvUlBFY01nZXBaSHovZUNjcXZnZkx6aG5xR25rSWRqcjFKQzBLVjcycFBZTEZpZWpGMGdnPT0ifSwic2lnbmFsSWRlbnRpdGllcyI6W3siaWRlbnRpZmllciI6eyJuYW1lIjoiMjU0NzM0OTM5MjM2OjI4QHMud2hhdHNhcHAubmV0IiwiZGV2aWNlSWQiOjB9LCJpZGVudGlmaWVyS2V5Ijp7InR5cGUiOiJCdWZmZXIiLCJkYXRhIjoiQmNaY2hyVXlCUnRaZnFNQU1ORWlDSUVvZkRSREVzZXpvNkM5RzVqN1ZQOC8ifX1dLCJwbGF0Zm9ybSI6ImFuZHJvaWQiLCJyb3V0aW5nSW5mbyI6eyJ0eXBlIjoiQnVmZmVyIiwiZGF0YSI6IkNBMElCUT09In0sImxhc3RBY2NvdW50U3luY1RpbWVzdGFtcCI6MTc1NjM2NjM3OCwibGFzdFByb3BIYXNoIjoiMUs0aEg0IiwibXlBcHBTdGF0ZUtleUlkIjoiQUFBQUFLcGUifQ==",
+  AUTO_STATUS_SEEN: true,
+  AUTO_DL: false,
+  AUTO_READ: true,
+  AUTO_TYPING: true,
+  AUTO_RECORDING: false,
+  ALWAYS_ONLINE: false,
+  AUTO_REACT: true,
+  AUTO_BLOCK: true,
+  REJECT_CALL: false,
+  NOT_ALLOW: true,
+  MODE: "public",
+  OWNER_NAME: "ArslanMD Official",
+  OWNER_NUMBER: "923237045919",
+  GEMINI_KEY: "AIzaSyCUPaxfIdZawsKZKqCqJcC-GWiQPCXKTDc", // Optional
+  WELCOME: true,
 };
-
-global.limitCount = 10;
-
-global.mess = {
-    group: "*This is not a group*",
-    admin: "*To use this feature first make TREND-X admin*",
-    owner: "*Sorry bro😛, you're not my owner*",
-    premium: "*First become a premium user*",
-    botadmin: "*TREND-X needs to be admin*",
-    limited: "*Limit reached*"
-};
-
-let file = require.resolve(__filename);
-fs.watchFile(file, () => {
-  fs.unwatchFile(file);
-  console.log(`\x1b[0;32m${__filename} \x1b[1;32mupdated!\x1b[0m`);
-  delete require.cache[file];
-  require(file);
-});
