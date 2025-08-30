@@ -1,173 +1,244 @@
+
 console.clear();
 console.log('starting...');
 require('./setting/config');
 process.on("uncaughtException", console.error); 
 
-// index.js - TREND-XMD (CommonJS) - base64 session only (no QR)
 const {
-  default: makeWASocket,
-  DisconnectReason,
-  fetchLatestBaileysVersion,
-  proto
-} = require('@whiskeysockets/baileys');
+default: makeWASocket,
+makeCacheableSignalKeyStore,
+useMultiFileAuthState,
+DisconnectReason,
+fetchLatestBaileysVersion,
+generateForwardMessageContent,
+prepareWAMessageMedia,
+generateWAMessageFromContent,
+generateMessageID,
+downloadContentFromMessage,
+getContentType,
+jidDecode,
+MessageRetryMap,
+getAggregateVotesInPollMessage,
+proto,
+delay
+} = require("@whiskeysockets/baileys")
 
 const pino = require('pino');
+const readline = require("readline");
 const fs = require('fs');
-const path = require('path');
-const chalk = require('chalk');
-const util = require('util');
-const NodeCache = require('node-cache');
+const os = require('os')
+const chalk = require('chalk')
+const _ = require('lodash')
+const lolcatjs = require('lolcatjs')
+const util = require('util')
+const fetch = require('node-fetch')
+const moment = require('moment-timezone')
+const FileType = require('file-type');
+const { Boom } = require('@hapi/boom');
+const PhoneNumber = require('awesome-phonenumber');
+const { color } = require('./start/lib/color');import axios from 'axios';
+const {
+smsg,
+sendGmail,
+formatSize, 
+isUrl, 
+generateMessageTag,
+getBuffer,
+getSizeMedia,
+runtime,
+fetchJson,
+sleep 
+} = require('./start/lib/myfunction');
 
-const { JSONFileSync } = require('./start/lib/lowdb/adapters/JSONFileSync.js');
-const { smsg } = require('./start/lib/myfunction'); // keep your helper
+const { 
+imageToWebp,
+videoToWebp,
+writeExifImg,
+writeExifVid 
+} = require('./start/lib/exif')
 
-/* ---------- Config & session ---------- */
-const SESSION_FILE = path.join(__dirname, 'session.json');
-const db = new JSONFileSync(SESSION_FILE);
 
-// ==========================
-// 🔧 Deep Buffer Reviver
-// ==========================
-function reviveBuffersDeep(obj) {
-  if (!obj || typeof obj !== "object") return obj;
 
-  if (obj.type === "Buffer" && Array.isArray(obj.data)) {
-    return Buffer.from(obj.data);
-  }
-
-  for (const k in obj) {
-    obj[k] = reviveBuffersDeep(obj[k]);
-  }
-  return obj;
-}
-
-// ==========================
-// 🔧 Load Session from ENV
-// ==========================
-function loadSession() {
-  const encoded = process.env.SESSION_ID || "";
-  if (!encoded.startsWith("TREND-XMD~")) return null;
-
-  try {
-    const base64 = encoded.replace("TREND-XMD~", "");
-    const json = Buffer.from(base64, "base64").toString("utf-8");
-    let credsData = JSON.parse(json);
-
-    // revive all nested Buffers
-    credsData = reviveBuffersDeep(credsData);
-
-    // wrap creds if missing outer { creds, keys }
-    if (!credsData.creds && (credsData.noiseKey || credsData.signedIdentityKey || credsData.me)) {
-      console.log("⚠️ Wrapping creds-only session into { creds, keys } format.");
-      credsData = { creds: credsData, keys: {} };
-    }
-
-    if (!credsData.creds) throw new Error("missing creds");
-    if (!credsData.keys) credsData.keys = {};
-
-    console.log("✅ SESSION restored with buffers");
-    return credsData;
-  } catch (err) {
-    console.error("❌ Failed to decode SESSION_ID:", err.message);
-    return null;
-  }
-}
-
-// ==========================
-// 🔧 Save Session Backup
-// ==========================
-function saveSessionBackup(credsData) {
-  try {
-    // stringify and base64 encode
-    const json = JSON.stringify(credsData, null, 2);
-    const base64 = Buffer.from(json, "utf-8").toString("base64");
-    const wrapped = `TREND-XMD~${base64}`;
-
-    // write to session.json for backup
-    fs.writeFileSync("./session.json", wrapped);
-    console.log("💾 Session backup saved.");
-  } catch (err) {
-    console.error("❌ Failed to save session backup:", err.message);
-  }
-}
-
-/* ---------- Express server (Heroku) ---------- */
-const express = require('express');
-const app = express();
-const PORT = process.env.PORT || 3000;
-app.get('/', (req, res) => res.send('TREND-XMD Bot is running'));
-app.listen(PORT, () => console.log(`HTTP server listening on ${PORT}`));
-
-/* ---------- Logger & cache ---------- */
-const MAIN_LOGGER = pino({ timestamp: () => `,"time":"${new Date().toJSON()}"` });
+const MAIN_LOGGER = pino({
+    timestamp: () => `,"time":"${new Date().toJSON()}"`
+});
 const logger = MAIN_LOGGER.child({});
-logger.level = 'trace';
+logger.level = "trace";
+
 const msgRetryCounterCache = new NodeCache();
 
-/* ---------- Minimal store ---------- */
-let store = { contacts: {} };
-let conn = null;
+const __filename = new URL(import.meta.url).pathname;
+const __dirname = path.dirname(__filename);
 
-/* ---------- Load and prepare authState ---------- */
-let authState = loadSession();
-if (!authState) {
-  console.error("❌ No valid SESSION_ID provided in env. Exiting.");
-  process.exit(1);
+const sessionDir = path.join(__dirname, 'session');
+const credsPath = path.join(sessionDir, 'creds.json');
+
+if (!fs.existsSync(sessionDir)) {
+    fs.mkdirSync(sessionDir, { recursive: true });
 }
 
-/* ---------- Start client ---------- */
-async function clientstart() {
-  try {
-    const { version } = await fetchLatestBaileysVersion().catch(() => ({ version: [4, 0, 0] }));
-    conn = makeWASocket({
-      version,
-      logger,
-      printQRInTerminal: false,
-      auth: authState,
-      getMessage: async () => null,
-      msgRetryCounterCache
-    });
+async function downloadSessionData() {
+    console.log("Debugging SESSION_ID:", config.SESSION_ID);
 
-    conn.ev.on('creds.update', () => {
-      authState.creds = conn.auth?.creds || authState.creds;
-      saveSessionBackup(authState);
-      console.log('💾 Session updated and saved');
-    });
+    if (!config.SESSION_ID) {
+        console.error('❌ Please add your session to SESSION_ID env !!');
+        return false;
+    }
 
-    conn.ev.on('messages.upsert', async chatUpdate => {
-      try {
-        let mek = chatUpdate.messages && chatUpdate.messages[0];
+    const sessdata = config.SESSION_ID.split("TREND-XMD~")[1];
+
+    if (!sessdata || !sessdata.includes("#")) {
+        console.error('❌ Invalid SESSION_ID format! It must contain both file ID and decryption key.');
+        return false;
+    }
+
+    const [fileID, decryptKey] = sessdata.split("#");
+
+    try {
+        console.log("🔄 Downloading Session...");
+        const file = File.fromURL(`https://mega.nz/file/${fileID}#${decryptKey}`);
+
+        const data = await new Promise((resolve, reject) => {
+            file.download((err, data) => {
+                if (err) reject(err);
+                else resolve(data);
+            });
+        });
+
+        await fs.promises.writeFile(credsPath, data);
+        console.log("🔒 Session Successfully Loaded !!");
+        return true;
+    } catch (error) {
+        console.error('❌ Failed to download session data:', error);
+        return false;
+    }
+}
+
+async function start() {
+    try {
+        const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+        const { version, isLatest } = await fetchLatestBaileysVersion();
+        console.log(`🤖 TREND-X using WA v${version.join('.')}, isLatest: ${isLatest}`);
+        
+        const Matrix = makeWASocket({
+            version,
+            logger: pino({ level: 'silent' }),
+            printQRInTerminal: useQR,
+            browser: ["TREND-X", "safari", "3.3"],
+            auth: state,
+            getMessage: async (key) => {
+                if (store) {
+                    const msg = await store.loadMessage(key.remoteJid, key.id);
+                    return msg.message || undefined;
+                }
+                return { conversation: "TREND-X whatsapp user bot" };
+            }
+        });
+
+conn.ev.on('messages.upsert', async chatUpdate => {
+try {
+let mek = chatUpdate.messages[0]
+if (!mek.message) return
+mek.message = (Object.keys(mek.message)[0] === 'ephemeralMessage') ? mek.message.ephemeralMessage.message : mek.message
+if (mek.key && mek.key.remoteJid === 'status@broadcast') return
+ if (!conn.public && !mek.key.fromMe && chatUpdate.type === 'notify') return
+let m = smsg(conn, mek, store)
+require("./start/system")(conn, m, chatUpdate, mek, store)
+} catch (err) {
+console.log(chalk.yellow.bold("[ ERROR ] system.js :\n") + chalk.redBright(util.format(err)))
+}
+})
+        }
+    } conn.ev.on('connection.update', async (update) => {
+let { Connecting } = require("./start/lib/connection/connect.js");
+Connecting({ update, conn, Boom, DisconnectReason, sleep, color, clientstart });
+})
+            initialConnection = false;
+        } else {
+            console.log(chalk.blue("♻️ Connection reestablished after restart."));
+        }
+    }
+});
+        
+        Matrix.ev.on('creds.update', saveCreds);
+
+        Matrix.ev.on("messages.upsert", async chatUpdate => await Handler(chatUpdate, Matrix, logger));
+        Matrix.ev.on("call", async (json) => await Callupdate(json, Matrix));
+        Matrix.ev.on("group-participants.update", async (messag) => await GroupUpdate(Matrix, messag));
+
+        if (config.MODE === "public") {
+            Matrix.public = true;
+        } else if (config.MODE === "private") {
+            Matrix.public = false;
+        }
+
+        Matrix.ev.on('messages.upsert', async (chatUpdate) => {
+            try {
+                const mek = chatUpdate.messages[0];
+                console.log(mek);
+                if (!mek.key.fromMe && config.AUTO_REACT) {
+                    console.log(mek);
+                    if (mek.message) {
+                        const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                        await doReact(randomEmoji, mek, Matrix);
+                    }
+                }
+            } catch (err) {
+                console.error('Error during auto reaction:', err);
+            }
+        });
+        
+        Matrix.ev.on('messages.upsert', async (chatUpdate) => {
+    try {
+        const mek = chatUpdate.messages[0];
+        const fromJid = mek.key.participant || mek.key.remoteJid;
         if (!mek || !mek.message) return;
-        mek.message = Object.keys(mek.message)[0] === 'ephemeralMessage'
-          ? mek.message.ephemeralMessage.message
-          : mek.message;
-        let m = smsg(conn, mek, store);
-        require('./start/system')(conn, m, chatUpdate, mek, store);
-      } catch (err) {
-        console.log(chalk.yellow.bold('[ ERROR ] system.js :\n') + chalk.redBright(util.format(err)));
-      }
-    });
-
-    console.log('✅ Client started (using SESSION_ID only).');
-
-  } catch (err) {
-    console.error('Failed to start client:', err);
-    process.exit(1);
-  }
-}
-
-/* ---------- Run bot ---------- */
-clientstart();
-
-/* ---------- Hot reload ---------- */
-let file = require.resolve(__filename);
-fs.watchFile(file, () => {
-  fs.unwatchFile(file);
-  console.log(chalk.redBright(`Update ${__filename}`));
-  delete require.cache[file];
-  require(file);
+        if (mek.key.fromMe) return;
+        if (mek.message?.protocolMessage || mek.message?.ephemeralMessage || mek.message?.reactionMessage) return; 
+        if (mek.key && mek.key.remoteJid === 'status@broadcast' && config.AUTO_STATUS_SEEN) {
+            await Matrix.readMessages([mek.key]);
+            
+            if (config.AUTO_STATUS_REPLY) {
+                const customMessage = config.STATUS_READ_MSG || '✅ Auto Status Seen Bot By TREND-X';
+                await Matrix.sendMessage(fromJid, { text: customMessage }, { quoted: mek });
+            }
+        }
+    } catch (err) {
+        console.error('Error handling messages.upsert event:', err);
+    }
 });
 
-/* ---------- Crash handlers ---------- */
-process.on('uncaughtException', (err) => console.error('Uncaught Exception:', err));
-process.on('unhandledRejection', (reason) => console.error('Unhandled Rejection:', reason));
+    } catch (error) {
+        console.error('Critical Error:', error);
+        process.exit(1);
+    }
+}
+
+async function init() {
+    if (fs.existsSync(credsPath)) {
+        console.log("🔒 Session file found, proceeding without QR code.");
+        await start();
+    } else {
+        const sessionDownloaded = await downloadSessionData();
+        if (sessionDownloaded) {
+            console.log("🔒 Session downloaded, starting bot.");
+            await start();
+        } else {
+            console.log("No session found or downloaded, QR code will be printed for authentication.");
+            useQR = true;
+            await start();
+        }
+    }
+}
+
+init();
+
+app.get('/', (req, res) => {
+    res.send('Hello World!');
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
+
+
